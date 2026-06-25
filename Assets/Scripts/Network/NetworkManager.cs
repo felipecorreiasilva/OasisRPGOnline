@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.IO;   // Necessário para MemoryStream e BinaryWriter
 using Oasis.Network.Common;
 
 namespace Oasis.Network
@@ -10,7 +11,9 @@ namespace Oasis.Network
     {
         // Singleton: permite acesso global como NetworkManager.Instance
         public static NetworkManager Instance { get; private set; }
+        public uint CurrentUserId { get; private set; } // Adicione esta linha
 
+        
         [Header("Configurações")]
         [SerializeField] private string serverIp = "127.0.0.1";
         [SerializeField] private int serverPort = 6900;
@@ -68,6 +71,27 @@ namespace Oasis.Network
             Debug.Log($"[Network] Enviando login: {username}");
         }
 
+        public void SendCharListRequest(uint userId)
+        {
+            if (_stream == null || !_client.Connected)
+            {
+                Debug.LogError("[Network] Não conectado ao servidor!");
+                return;
+            }
+
+            using (MemoryStream m = new MemoryStream())
+            using (BinaryWriter writer = new BinaryWriter(m))
+            {
+                writer.Write((ushort)0x0200); // ID: CHAR_LIST_REQUEST
+                writer.Write(userId);         // UserID
+                
+                byte[] packet = m.ToArray();
+                _stream.Write(packet, 0, packet.Length); // USANDO O _stream AQUI
+                
+                Debug.Log($"[Network] Enviando solicitação de CharList para user_id: {userId}");
+            }
+        }
+
         private byte[] StructureToBytes<T>(T structure)
         {
             int size = Marshal.SizeOf(structure);
@@ -110,6 +134,10 @@ namespace Oasis.Network
         private void HandleLoginAccepted(byte[] header)
         {
             PACKET_LOGIN_ACCEPTED data = ReadPacketBody<PACKET_LOGIN_ACCEPTED>(header);
+            
+            // ATUALIZAÇÃO: Salva o ID recebido do servidor
+            CurrentUserId = data.user_id; 
+            
             Debug.Log($"[Login] Sucesso! UserID: {data.user_id}");
             OnLoginResult?.Invoke(true, "Login realizado.");
         }

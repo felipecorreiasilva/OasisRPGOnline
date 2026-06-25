@@ -1,61 +1,39 @@
 using UnityEngine;
-using TMPro;
-using UnityEngine.UI;
-using Oasis.Network; // Namespace do seu NetworkManager
+using TMPro; // Certifique-se de usar o namespace do TextMeshPro
+using Oasis.Network; // Para acessar o NetworkManager
 
 namespace Oasis.UI.Login
 {
     public class LoginUI : MonoBehaviour
     {
-        [Header("UI Elements")]
+        [Header("Referências de Input")]
         [SerializeField] private TMP_InputField _usernameInput;
         [SerializeField] private TMP_InputField _passwordInput;
-        [SerializeField] private Button _loginButton;
 
-        private void OnEnable()
-        {
-            // Escuta a resposta do servidor
-            NetworkManager.OnLoginResult += HandleLoginResult;
-        }
-
-        private void OnDisable()
-        {
-            // Remove o listener ao destruir ou desativar a tela
-            NetworkManager.OnLoginResult -= HandleLoginResult;
-        }
-
-        private void Start()
-        {
-            _loginButton.onClick.AddListener(OnLoginButtonClicked);
-        }
-
+        /// <summary>
+        /// Este método deve estar vinculado ao evento "OnClick" do seu botão Entrar no Inspector.
+        /// </summary>
         public void OnLoginButtonClicked()
         {
             string user = _usernameInput.text;
             string pass = _passwordInput.text;
 
+            // Validação simples local antes de enviar
             if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
             {
-                Debug.LogWarning("Por favor, preencha usuário e senha.");
+                Debug.LogWarning("[LoginUI] Usuário ou senha vazios!");
+                // Aqui você poderia chamar um MessagePopupUI para avisar o jogador
                 return;
             }
 
-            // Chama o método no NetworkManager (Singleton)
-            NetworkManager.Instance.SendLoginRequest(user, pass);
-        }
+            // 1. Esconde a tela de login
+            UIManager.Instance.loginPanel.SetActive(false);
+            
+            // 2. Mostra a tela de "Aguarde"
+            UIManager.Instance.ShowAwaitScreen(true);
 
-        private void HandleLoginResult(bool success, string message)
-        {
-            if (success)
-            {
-                Debug.Log("Login Aceito: " + message);
-                // TODO: Adicionar aqui a troca de cena para Seleção de Personagem
-            }
-            else
-            {
-                Debug.LogError("Erro no Login: " + message);
-                // TODO: Adicionar aviso visual na tela (MessagePopupUI)
-            }
+            // 3. Solicita ao NetworkManager o envio (o Controller ouvirá a resposta)
+            NetworkManager.Instance.SendLoginRequest(user, pass);
         }
     }
 }
