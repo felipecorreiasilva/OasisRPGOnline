@@ -125,7 +125,25 @@ namespace Oasis.Network
                 case PacketType.LOGIN_DENIED:
                     HandleLoginDenied(headerBuffer);
                     break;
-                default:
+                case PacketType.CHAR_LIST:
+                // 1. O servidor geralmente envia um byte de contagem (quantos personagens)
+                byte[] countBuffer = new byte[1];
+                _stream.Read(countBuffer, 0, 1);
+                byte charCount = countBuffer[0];
+
+                // 2. Calcula o tamanho total: 1 (count) + (N * tamanho da struct de char)
+                int structSize = Marshal.SizeOf(typeof(PACKET_CHAR_LIST_ENTRY));
+                byte[] fullData = new byte[1 + (charCount * structSize)];
+                
+                // 3. Lê o restante do pacote do stream
+                fullData[0] = charCount;
+                _stream.Read(fullData, 1, fullData.Length - 1);
+
+                // 4. Despacha o buffer completo
+                Char.CharClif.Dispatch((ushort)PacketType.CHAR_LIST, fullData);
+                break;
+                
+                    default:
                     Debug.LogWarning($"Pacote não mapeado: 0x{packetId:X4}");
                     break;
             }

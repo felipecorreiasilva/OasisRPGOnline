@@ -1,5 +1,7 @@
-using UnityEngine; // Necessário para MonoBehaviour e FindObjectOfType
-using Oasis.UI.Char; // Necessário para acessar CharSelectUI
+using UnityEngine;
+using System.Collections.Generic;
+using Oasis.Network.Common;
+using Oasis.UI.Char;
 
 namespace Oasis.Controllers.Char
 {
@@ -14,17 +16,32 @@ namespace Oasis.Controllers.Char
 
         public void InitializeCharSelection()
         {
-            // Busca diretamente na cena
+            // Busca a UI na cena
             var ui = FindAnyObjectByType<CharSelectUI>();
             
             if (ui != null)
             {
+                // Aqui podemos opcionalmente limpar os slots ou definir um estado inicial
+                Debug.Log("[CharController] Inicializando tela de seleção...");
                 ui.InitializeSlots();
             }
             else
             {
                 Debug.LogError("[CharController] CharSelectUI não encontrado na cena!");
             }
+        }
+
+        public void OnReceiveCharList(List<PACKET_CHAR_LIST_ENTRY> characterEntries)
+        {
+            var ui = FindAnyObjectByType<CharSelectUI>();
+            if (ui == null) 
+            {
+                Debug.LogError("[CharController] CharSelectUI não encontrado ao tentar processar lista!");
+                return;
+            }
+
+            // Agora usamos o método coordenador que criamos na UI
+            ui.UpdateAllSlots(characterEntries);
         }
     }
 }
