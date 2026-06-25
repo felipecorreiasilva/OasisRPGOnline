@@ -1,7 +1,7 @@
 using UnityEngine;
-using System.Collections; // Necessário para Coroutines
+using System.Collections;
 using Oasis.Network;
-using Oasis.UI;
+using Oasis.Controllers.Char;
 
 namespace Oasis.Controllers.Login
 {
@@ -21,33 +21,39 @@ namespace Oasis.Controllers.Login
         {
             if (success)
             {
-                Debug.Log($"[LoginController] Sucesso! Iniciando transição...");
-                
-                // Dispara a Coroutine em vez de chamar direto
                 StartCoroutine(TransitionToCharSelect());
             }
             else
             {
-                // Erro: Fecha o "Aguarde" instantaneamente
                 UIManager.Instance.ShowAwaitScreen(false);
                 UIManager.Instance.loginPanel.SetActive(true);
             }
         }
 
-        // Coroutine: Aguarda 1 segundo e depois executa a troca
         private IEnumerator TransitionToCharSelect()
         {
-            // 1. Solicita a lista de personagens
+            // 1. Solicita a lista de personagens ao servidor
             uint userId = NetworkManager.Instance.CurrentUserId;
             NetworkManager.Instance.SendCharListRequest(userId);
 
-            // 2. Espera 1 segundo (tempo em tempo real, independente de timescale)
-            yield return new WaitForSeconds(1.0f);
+            // 2. Aguarda um curto período para a transição
+            yield return new WaitForSeconds(0.7f);
 
             // 3. Executa a troca visual
             UIManager.Instance.ShowCharSelectScreen();
+
+            // 4. Delega a inicialização da lista ao CharController
+            // Isso mantém o LoginController focado apenas no fluxo de login
+            if (CharController.Instance != null)
+            {
+                CharController.Instance.InitializeCharSelection();
+            }
+            else
+            {
+                Debug.LogError("[LoginController] CharController não encontrado na cena!");
+            }
             
-            Debug.Log("[LoginController] Transição concluída.");
+            Debug.Log("[LoginController] Transição e chamada ao CharController concluídas.");
         }
     }
 }
