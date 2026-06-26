@@ -33,6 +33,13 @@ namespace Oasis.Controllers.Char
 
         public void OnReceiveCharList(List<PACKET_CHAR_LIST_ENTRY> characterEntries)
         {
+            Debug.Log($"[CharController] Recebidos {characterEntries.Count} personagens do servidor.");
+
+            foreach (var entry in characterEntries)
+            {
+                Debug.Log($"Número do Char: {entry.char_num}, Nome: {entry.CharName}, Nível: {entry.level}");
+            }
+
             var ui = FindAnyObjectByType<CharSelectUI>();
             if (ui == null) 
             {

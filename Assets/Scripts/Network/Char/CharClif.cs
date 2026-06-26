@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Oasis.Network.Common;
 using Oasis.Controllers.Char;
+using UnityEngine;
 
 namespace Oasis.Network.Char
 {

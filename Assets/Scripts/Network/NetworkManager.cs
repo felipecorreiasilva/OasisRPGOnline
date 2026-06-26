@@ -116,7 +116,6 @@ namespace Oasis.Network
             byte[] headerBuffer = new byte[2];
             _stream.Read(headerBuffer, 0, 2);
             ushort packetId = BitConverter.ToUInt16(headerBuffer, 0);
-
             switch ((PacketType)packetId)
             {
                 case PacketType.LOGIN_ACCEPTED:
@@ -125,24 +124,12 @@ namespace Oasis.Network
                 case PacketType.LOGIN_DENIED:
                     HandleLoginDenied(headerBuffer);
                     break;
+                case PacketType.CHAR_SERVER_INFO:
+                    HandleCharServerInfo(headerBuffer); 
+                    break;
                 case PacketType.CHAR_LIST:
-                // 1. O servidor geralmente envia um byte de contagem (quantos personagens)
-                byte[] countBuffer = new byte[1];
-                _stream.Read(countBuffer, 0, 1);
-                byte charCount = countBuffer[0];
-
-                // 2. Calcula o tamanho total: 1 (count) + (N * tamanho da struct de char)
-                int structSize = Marshal.SizeOf(typeof(PACKET_CHAR_LIST_ENTRY));
-                byte[] fullData = new byte[1 + (charCount * structSize)];
-                
-                // 3. Lê o restante do pacote do stream
-                fullData[0] = charCount;
-                _stream.Read(fullData, 1, fullData.Length - 1);
-
-                // 4. Despacha o buffer completo
-                Char.CharClif.Dispatch((ushort)PacketType.CHAR_LIST, fullData);
-                break;
-                
+                    HandleCharList(headerBuffer);
+                    break;
                     default:
                     Debug.LogWarning($"Pacote não mapeado: 0x{packetId:X4}");
                     break;
@@ -165,6 +152,55 @@ namespace Oasis.Network
             PACKET_LOGIN_DENIED data = ReadPacketBody<PACKET_LOGIN_DENIED>(header);
             Debug.LogWarning($"[Login] Negado! Código: {data.error_code}");
             OnLoginResult?.Invoke(false, "Falha no Login: Código " + data.error_code);
+        }
+
+        private void HandleCharServerInfo(byte[] header)
+        {
+            // Lê o corpo do pacote que contém IP e Porta
+            PACKET_CHAR_SERVER_INFO data = ReadPacketBody<PACKET_CHAR_SERVER_INFO>(header);
+            
+            Debug.Log($"[Login] Redirecionamento recebido! Conectando ao Char Server em {data.port}...");
+
+            // 1. Fecha a conexão atual com o Login Server
+            if (_client != null)
+            {
+                _stream.Close();
+                _client.Close();
+            }
+
+            // 2. Abre a nova conexão com o Char Server na porta recebida (6121)
+            // O IP geralmente vem no pacote, mas usamos o mesmo IP do Login
+            ConnectToServer(serverIp, (int)data.port);
+
+            // 3. Agora que está conectado ao Char Server, dispara a requisição da lista
+            SendCharListRequest(CurrentUserId);
+        }
+
+        private void HandleCharList(byte[] header)
+        {
+            // 1. Lê a quantidade de personagens (você já tinha essa lógica)
+            byte[] countBuffer = new byte[1];
+            _stream.Read(countBuffer, 0, 1);
+            byte charCount = countBuffer[0];
+            
+            Debug.Log($"[Network] Recebendo lista de {charCount} personagens...");
+
+            // 2. Calcula o tamanho e lê os dados
+            int structSize = Marshal.SizeOf(typeof(PACKET_CHAR_LIST_ENTRY));
+            int totalDataSize = charCount * structSize;
+            byte[] dataBuffer = new byte[totalDataSize];
+            
+            int bytesRead = _stream.Read(dataBuffer, 0, totalDataSize);
+            
+            // 3. Despacha (agora com o cast correto)
+            if (bytesRead == totalDataSize)
+            {
+                Char.CharClif.Dispatch((ushort)PacketType.CHAR_LIST, dataBuffer);
+            }
+            else
+            {
+                Debug.LogError($"[Network] Erro: Lidos {bytesRead} bytes, esperado {totalDataSize}");
+            }
         }
 
         private T ReadPacketBody<T>(byte[] header) where T : struct

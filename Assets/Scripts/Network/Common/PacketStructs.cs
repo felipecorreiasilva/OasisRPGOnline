@@ -30,6 +30,14 @@ namespace Oasis.Network.Common
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct PACKET_CHAR_SERVER_INFO
+    {
+        public ushort packet_id; // Identificador 0x0103
+        public uint ip;          // IP enviado pelo servidor (ex: 0x0100007F para 127.0.0.1)
+        public ushort port;      // Porta do Char Server (6121)
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct PACKET_CHAR_LIST_REQUEST
     {
         public ushort packet_id;
@@ -48,11 +56,18 @@ namespace Oasis.Network.Common
     {
         public uint char_id;
         public byte char_num;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 24)] public string name;
+        
+        // Altere para um array de bytes para evitar erro de conversão direta
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 24)] 
+        public byte[] name; 
+        
         public byte level;
         public byte sex;
         public byte hair;
         public ushort map_id;
+
+        // Propriedade auxiliar para pegar o nome como string facilmente
+        public string CharName => System.Text.Encoding.ASCII.GetString(name).TrimEnd('\0');
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

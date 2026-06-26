@@ -8,6 +8,7 @@ namespace Oasis.Network.Common
         LOGIN_REQUEST = 0x0100,
         LOGIN_ACCEPTED = 0x0101,
         LOGIN_DENIED = 0x0102,
+        CHAR_SERVER_INFO = 0x0103,
 
         // Character (0x02xx)
         CHAR_LIST_REQUEST = 0x0200,
