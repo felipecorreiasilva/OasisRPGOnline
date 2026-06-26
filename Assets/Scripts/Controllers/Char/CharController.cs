@@ -9,6 +9,11 @@ namespace Oasis.Controllers.Char
     {
         public static CharController Instance { get; private set; }
 
+        public CharSelectUI charSelectUI; 
+        
+        // Cache para armazenar personagens se a UI ainda não estiver pronta
+        private List<PACKET_CHAR_LIST_ENTRY> _pendingCharList;
+
         private void Awake()
         {
             Instance = this;
@@ -16,14 +21,26 @@ namespace Oasis.Controllers.Char
 
         public void InitializeCharSelection()
         {
-            // Busca a UI na cena
-            var ui = FindAnyObjectByType<CharSelectUI>();
-            
-            if (ui != null)
+            if (charSelectUI == null)
             {
-                // Aqui podemos opcionalmente limpar os slots ou definir um estado inicial
+                charSelectUI = FindAnyObjectByType<CharSelectUI>(FindObjectsInactive.Include);
+            }
+            
+            if (charSelectUI != null)
+            {
                 Debug.Log("[CharController] Inicializando tela de seleção...");
-                ui.InitializeSlots();
+                
+                // 1. Cria os slots e mapeia
+                charSelectUI.InitializeSlots();
+                charSelectUI.RefreshSlotMap();
+                
+                // 2. Se tínhamos personagens esperando, processa agora que a UI está pronta
+                if (_pendingCharList != null)
+                {
+                    Debug.Log("[CharController] Processando lista em cache...");
+                    charSelectUI.UpdateAllSlots(_pendingCharList);
+                    _pendingCharList = null; // Limpa o cache
+                }
             }
             else
             {
@@ -33,22 +50,23 @@ namespace Oasis.Controllers.Char
 
         public void OnReceiveCharList(List<PACKET_CHAR_LIST_ENTRY> characterEntries)
         {
-            Debug.Log($"[CharController] Recebidos {characterEntries.Count} personagens do servidor.");
+            Debug.Log($"[CharController] Recebidos {characterEntries.Count} personagens.");
 
-            foreach (var entry in characterEntries)
+            if (charSelectUI == null)
             {
-                Debug.Log($"Número do Char: {entry.char_num}, Nome: {entry.CharName}, Nível: {entry.level}");
+                charSelectUI = FindAnyObjectByType<CharSelectUI>(FindObjectsInactive.Include);
             }
 
-            var ui = FindAnyObjectByType<CharSelectUI>();
-            if (ui == null) 
+            // Se a UI ainda não tem slots mapeados, armazena no cache
+            if (charSelectUI != null && charSelectUI.GetSlotMapCount() > 0)
             {
-                Debug.LogError("[CharController] CharSelectUI não encontrado ao tentar processar lista!");
-                return;
+                charSelectUI.UpdateAllSlots(characterEntries);
             }
-
-            // Agora usamos o método coordenador que criamos na UI
-            ui.UpdateAllSlots(characterEntries);
+            else
+            {
+                Debug.Log("[CharController] UI não pronta. Armazenando personagens em cache.");
+                _pendingCharList = characterEntries;
+            }
         }
     }
 }

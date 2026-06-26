@@ -1,88 +1,80 @@
 using UnityEngine;
 using System.Collections.Generic; 
-using Oasis.Network.Common;      
-using TMPro;                     
+using Oasis.Network.Common; 
+using TMPro; 
 
 namespace Oasis.UI.Char
 {
     public class CharSelectUI : MonoBehaviour
     {
         public Transform gridGroup; 
-        public GameObject charSlotPrefab; // ARRASTE O PREFAB AQUI NO INSPECTOR
+        public GameObject charSlotPrefab; 
+        private Dictionary<int, Transform> slotMap = new Dictionary<int, Transform>();
 
-        // 1. Método para garantir que os 9 slots existam na cena
-        // Dentro do seu CharSelectUI.cs
+        // 1. Inicializa os 9 slots
         public void InitializeSlots()
         {
-            foreach (Transform child in gridGroup) {
-                Destroy(child.gameObject);
-            }
+            foreach (Transform child in gridGroup) Destroy(child.gameObject);
+            slotMap.Clear();
 
             for (int i = 1; i <= 9; i++)
             {
                 GameObject slotObj = Instantiate(charSlotPrefab, gridGroup);
-                
-                // 1. Pega o componente CharSlot que está no prefab instanciado
-                CharSlot slotScript = slotObj.GetComponent<CharSlot>();
-                
-                // 2. Chama o Setup passando o índice correto (1 a 9)
-                if (slotScript != null)
-                {
-                    slotScript.Setup(i);
-                }
-                
                 slotObj.name = $"Char_Slot_{i}";
+                // Mapeamento imediato após a criação
+                slotMap[i] = slotObj.transform;
             }
         }
 
-        // 2. Método coordenador para atualizar os dados dos slots existentes
-        public void UpdateAllSlots(List<PACKET_CHAR_LIST_ENTRY> characters)
+        public void RefreshSlotMap()
         {
-            // 1. Criar um mapa para busca rápida (Onde o char_num é a chave)
-            Dictionary<byte, PACKET_CHAR_LIST_ENTRY> charMap = new Dictionary<byte, PACKET_CHAR_LIST_ENTRY>();
-            foreach (var entry in characters)
+            slotMap.Clear();
+            int slotIndex = 1;
+            foreach (Transform child in gridGroup)
             {
-                charMap[entry.char_num] = entry;
+                slotMap[slotIndex] = child;
+                slotIndex++;
             }
-
-            // 2. Percorrer de 1 a 9 (Total de slots padrão)
-            for (int i = 1; i <= 9; i++)
-            {
-                bool exists = charMap.ContainsKey((byte)i);
-                
-                // Se existir, passamos os dados do personagem, se não, passamos default
-                PACKET_CHAR_LIST_ENTRY data = exists ? charMap[(byte)i] : default;
-                
-                // Atualiza a UI para o slot i
-                UpdateSlot(i, exists, data);
-            }
+            Debug.Log($"[CharSelectUI] Mapeamento concluído. {slotMap.Count} slots encontrados.");
         }
 
-        public void UpdateSlot(int index, bool exists, PACKET_CHAR_LIST_ENTRY data)
+        public int GetSlotMapCount()
         {
-            // Busca o slot pelo nome
-            Transform slot = gridGroup.Find($"Char_Slot_{index}");
-            if (slot == null) 
-            {
-                Debug.LogWarning($"[CharSelectUI] Slot Char_Slot_{index} não encontrado.");
-                return;
-            }
+            return slotMap.Count;
+        }
 
-            // Gerenciamento de visibilidade
-            var newButton = slot.Find("New");
-            var preview = slot.Find("Char_Preview");
-            
-            if (newButton != null) newButton.gameObject.SetActive(!exists);
-            if (preview != null) preview.gameObject.SetActive(exists);
+        // 2. Método principal de atualização
+        public void UpdateAllSlots(List<PACKET_CHAR_LIST_ENTRY> characterEntries)
+        {
+            if (slotMap.Count == 0) RefreshSlotMap();
 
-            if (exists)
+            foreach (var entry in characterEntries)
             {
-                // Usa a propriedade auxiliar que criamos no struct
-                var nameText = slot.Find("Name")?.GetComponent<TMPro.TextMeshProUGUI>();
-                if (nameText != null) 
+                // Usamos o char_num como chave (1, 2, 3...)
+                if (slotMap.TryGetValue((int)entry.char_num, out Transform slot))
                 {
-                    nameText.text = data.CharName;
-                    Debug.Log($"[CharSelectUI] Slot {index} atualizado com nome: {data.CharName}");
+                    // Gerencia visibilidade dos botões
+                    slot.Find("New")?.gameObject.SetActive(false);
+                    
+                    Transform preview = slot.Find("Char_Preview");
+                    if (preview != null) preview.gameObject.SetActive(true);
+
+                    // ATUALIZAÇÃO DO NOME (PADRONIZADO)
+                    Transform nameTransform = slot.Find("Char_Name");
+                    if (nameTransform != null)
+                    {
+                        nameTransform.gameObject.SetActive(true);
+                        var nameText = nameTransform.GetComponent<TextMeshProUGUI>();
+                        if (nameText != null) 
+                        {
+                            nameText.text = entry.CharName;
+                            Debug.Log($"[CharSelectUI] Slot {(int)entry.char_num} atualizado: {entry.CharName}");
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[CharSelectUI] Slot não encontrado para char_num: {entry.char_num}");
                 }
             }
         }

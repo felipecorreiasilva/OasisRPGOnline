@@ -2536,6 +2536,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c590bf736b0ad547b65d1c21d36a787, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Oasis.Controllers.Char.CharController
+  charSelectUI: {fileID: 963291546}
 --- !u!4 &1270071545
 Transform:
   m_ObjectHideFlags: 0
