@@ -1,53 +1,53 @@
 # Oasis RPG Online - Client
 
-Bem-vindo ao repositório do cliente do **Oasis RPG Online**. Este projeto é um motor de jogo em Unity focado em alta modularidade, utilizando uma arquitetura baseada em **MVC (Model-View-Controller)** para separar a lógica de rede, a interface do usuário e os serviços de processamento de entidades.
+Welcome to the **Oasis RPG Online** client repository. This project is a modular Unity game engine based on the **MVC (Model-View-Controller)** pattern, designed to decouple network logic, UI, and entity processing services.
 
-Este cliente foi desenvolvido para trabalhar em conjunto com o [oasis_emulator](https://github.com/felipecorreiasilva/oasis_emulator), que atua como a autoridade absoluta sobre o estado do jogo e regras de negócio.
+This client is built to work in conjunction with the [oasis_emulator](https://github.com/felipecorreiasilva/oasis_emulator), which serves as the absolute authority for game state and business logic.
 
-## Arquitetura MVC (Camada App/)
-A pasta `App/` orquestra a interação entre os sistemas:
+## MVC Architecture (App/ Layer)
+The `App/` folder orchestrates system interactions:
 
-* **Network/ (Packet Handlers):** Camada de *dispatchers* e *handlers* que processam os pacotes (`Clif` pattern) após serem recebidos pelo `NetworkManager`.
-* **UI/ (View):** Camada de visualização. Contém a interface do usuário e janelas contextuais.
-* **Controllers/ (Controller):** Orquestradores que fazem a "ponte". Eles recebem eventos da camada de rede, decidem qual lógica executar nos `Services/` e atualizam a `UI/`.
+* **Network/ (Packet Handlers):** Pure communication layer. Implements the `Clif` (Client Interface) pattern for packet processing (`Login`, `Char`, `Map`), acting as the network's model.
+* **UI/ (View):** Visualization layer containing the HUD and contextual windows.
+* **Controllers/ (Controller):** Bridges that receive network events, execute logic in the `Services/` layer, and update the `UI/`.
 
-## Services/ (Cérebro do Motor)
-Onde reside a "verdade" do jogo. Estes serviços processam dados brutos e gerenciam o estado do mundo.
+## Services/ (Engine Brain)
+Where the "truth" of the game resides. These services process raw data and manage the world state.
 
-* **Core/**: Infraestrutura base. Contém o `NetworkManager` (responsável pela conexão via socket) e o `DataManager` (responsável pelo carregamento de configurações como o `Assets/data/clientinfo.xml`).
-* **Entities/ (BL - Block List)**: Gerenciadores de entidades (estilo rAthena):
+* **Core/**: Base infrastructure. Contains `NetworkManager` (socket connections) and `DataManager` (config loading, e.g., `Assets/data/clientinfo.xml`).
+* **Entities/ (BL - Block List)**: Entity managers (rAthena-style):
     * `Character/`: `PCManager`, `MobManager`, `NpcManager`.
     * `Items/`: `ItemManager`.
     * `WorldObjects/`: `PortalManager`.
-* **Combat/**: Regras de cálculo (`SkillManager`, `StatusManager` para `SC_`).
-* **Effects/**: Regras de visualização (`EffectManager` para `EFST_` e `TooltipManager`).
-* **Content/**: Conteúdo de progressão (`QuestManager`, `DatabaseManager`).
+* **Combat/**: Combat calculation rules (`SkillManager`, `StatusManager` for `SC_`).
+* **Effects/**: Visual feedback rules (`EffectManager` for `EFST_`, `TooltipManager`).
+* **Content/**: Progression content (`QuestManager`, `DatabaseManager`).
 
 ---
 
-## Configuração de Conexão
-O cliente utiliza o arquivo **`Assets/data/clientinfo.xml`** para definir as configurações de conexão (IP e Porta). O `DataManager` realiza a leitura automática deste arquivo durante a inicialização, garantindo que o `NetworkManager` saiba onde conectar sem a necessidade de valores fixos no código.
+## Connection Configuration
+The client uses **`Assets/data/clientinfo.xml`** to define connection settings (IP/Port). The `DataManager` automatically parses this file on startup, allowing the `NetworkManager` to connect without hardcoded values.
 
 ---
 
-## Fluxo de Comunicação
-1.  **Recepção:** O `NetworkManager` (`Services/Core/`) recebe dados via socket e encaminha para os Handlers na pasta `App/Network/`.
-2.  **Processamento:** O `Controller` recebe o sinal do Handler, consulta os `Services/` (Model) para aplicar regras de negócio.
-3.  **Visualização:** O `Controller` dispara um evento que a `UI/` (View) escuta, atualizando o que o jogador vê na tela.
+## Communication Flow
+1. **Reception:** `NetworkManager` (`Services/Core/`) receives socket data and forwards it to Handlers in `App/Network/`.
+2. **Processing:** The `Controller` receives the signal, consults the `Services/` (Model) to apply business rules.
+3. **Visualization:** The `Controller` fires an event, which the `UI/` (View) listens to, updating the player's screen.
 
 ---
 
-## Convenções do Projeto
-- **Padrão rAthena:** Nomenclaturas como `Clif`, `BL`, `Opcodes` seguem o padrão do emulador oficial.
-- **Minúsculas:** Todos os nomes de pastas e arquivos seguem o padrão *lowercase* (`data/`, `luafiles/`).
-- **BL (Block List):** Qualquer objeto com ID único de rede é uma `Entity` e deve residir em `Services/Entities/`.
+## Project Conventions
+- **rAthena Pattern:** Naming conventions like `Clif`, `BL`, and `Opcodes` follow the official emulator standard.
+- **Lowercase:** All folder and file names follow a lowercase pattern (`data/`, `luafiles/`).
+- **BL (Block List):** Any world object with a unique server ID is an `Entity` and must reside in `Services/Entities/`.
 
 ---
 
-## Como Contribuir
-1. **Respeite o MVC:** A `UI/` nunca deve acessar a `Network/` diretamente. Use sempre um `Controller/` como intermediário.
-2. **Encapsulamento:** Sistemas novos devem ser `Managers` dentro de `Services/`.
-3. **Segurança:** O cliente não deve conter lógica de validação crítica. O servidor [oasis_emulator](https://github.com/felipecorreiasilva/oasis_emulator) é a autoridade absoluta.
+## How to Contribute
+1. **Respect MVC:** The `UI/` must never access `Network/` directly. Always use a `Controller/` as an intermediary.
+2. **Encapsulation:** New systems should be implemented as `Managers` within `Services/`.
+3. **Security:** The client does not contain critical validation logic. The [oasis_emulator](https://github.com/felipecorreiasilva/oasis_emulator) is the absolute authority on game state.
 
 ---
-*Desenvolvido para o ecossistema Oasis RPG.*
+*Developed for the Oasis RPG ecosystem.*
