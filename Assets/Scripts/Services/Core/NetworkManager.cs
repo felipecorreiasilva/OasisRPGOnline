@@ -11,12 +11,7 @@ namespace Oasis.Network
     {
         // Singleton: permite acesso global como NetworkManager.Instance
         public static NetworkManager Instance { get; private set; }
-        public uint CurrentUserId { get; private set; } // Adicione esta linha
-
-        
-        [Header("Configurações")]
-        [SerializeField] private string serverIp = "127.0.0.1";
-        [SerializeField] private int serverPort = 6900;
+        public uint CurrentUserId { get; private set; }
 
         private TcpClient _client;
         private NetworkStream _stream;
@@ -32,7 +27,17 @@ namespace Oasis.Network
 
         void Start()
         {
-            ConnectToServer(serverIp, serverPort);
+            // AGORA BUSCA A CONFIGURAÇÃO DO DATAMANAGER
+            if (DataManager.Instance != null && DataManager.Instance.ServerInfo != null)
+            {
+                string ip = DataManager.Instance.ServerInfo.Address;
+                int port = DataManager.Instance.ServerInfo.Port;
+                ConnectToServer(ip, port);
+            }
+            else
+            {
+                Debug.LogError("[Network] DataManager não inicializado ou sem dados do servidor!");
+            }
         }
 
         private void ConnectToServer(string ip, int port)
@@ -168,11 +173,8 @@ namespace Oasis.Network
                 _client.Close();
             }
 
-            // 2. Abre a nova conexão com o Char Server na porta recebida (6121)
-            // O IP geralmente vem no pacote, mas usamos o mesmo IP do Login
-            ConnectToServer(serverIp, (int)data.port);
-
-            // 3. Agora que está conectado ao Char Server, dispara a requisição da lista
+            // 2. Atualiza a porta do servidor
+            ConnectToServer(DataManager.Instance.ServerInfo.Address, (int)data.port);
             SendCharListRequest(CurrentUserId);
         }
 

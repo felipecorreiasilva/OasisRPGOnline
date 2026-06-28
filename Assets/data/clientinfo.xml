@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<clientinfo>
+    <connection>
+        <display>OasisRO Local</display>
+        <address>127.0.0.1</address>
+        <port>6900</port>
+        <version>55</version> 
+    </connection>
+</clientinfo>
