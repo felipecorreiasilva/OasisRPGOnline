@@ -14,26 +14,27 @@ namespace Oasis.UI.Login
         /// Este método deve estar vinculado ao evento "OnClick" do seu botão Entrar no Inspector.
         /// </summary>
         public void OnLoginButtonClicked()
-        {
-            string user = _usernameInput.text;
-            string pass = _passwordInput.text;
+{
+    // Verifica se os Managers existem antes de acessar
+    if (UIManager.Instance == null) {
+        Debug.LogError("[LoginUI] UIManager não encontrado!");
+        return;
+    }
+    if (NetworkManager.Instance == null) {
+        Debug.LogError("[LoginUI] NetworkManager não encontrado! Verifique o ServiceManager.");
+        return;
+    }
 
-            // Validação simples local antes de enviar
-            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
-            {
-                Debug.LogWarning("[LoginUI] Usuário ou senha vazios!");
-                // Aqui você poderia chamar um MessagePopupUI para avisar o jogador
-                return;
-            }
+    string user = _usernameInput.text;
+    string pass = _passwordInput.text;
 
-            // 1. Esconde a tela de login
-            UIManager.Instance.loginPanel.SetActive(false);
-            
-            // 2. Mostra a tela de "Aguarde"
-            UIManager.Instance.ShowAwaitScreen(true);
+    if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass)) return;
 
-            // 3. Solicita ao NetworkManager o envio (o Controller ouvirá a resposta)
-            NetworkManager.Instance.SendLoginRequest(user, pass);
-        }
+    UIManager.Instance.loginPanel.SetActive(false);
+    UIManager.Instance.ShowAwaitScreen(true);
+    
+    // Agora é seguro chamar, pois você validou acima
+    NetworkManager.Instance.SendLoginRequest(user, pass);
+}
     }
 }
